@@ -1,0 +1,49 @@
+## title: "ECDF"
+author: "jazzy abreu"
+date: "2025-02-06"
+output: html_document
+
+now let's do an empirical cumulative distribution function. this reports any given number percentile of individual that are above or below that threshold
+
+```
+
+set.seed(1234)
+
+wdata = data.frame(
+  sex = factor(rep(c("F", "M"), each = 200)),
+  weight = c(rnorm(200, 50), rnorm(200, 58)))
+
+```
+
+now lets look at our dataframe
+
+```
+
+head(wdata, 5)
+
+```
+
+now lets load our plotting package
+
+```
+
+library(ggplot2)
+
+theme_set(
+  theme_classic() +
+    theme(legend.position = "bottom")
+)
+
+```
+
+now lets create our EDCF plot
+
+```
+
+ggplot(wdata, aes(x=weight)) +
+  stat_ecdf(aes(color = sex, linetype = sex),
+            geom = "step", size = 1.5) +
+  scale_color_manual(values = c("#00AFBB", "#E7B900")) +
+  labs(y = "Weight")
+
+```
