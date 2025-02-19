@@ -1,0 +1,106 @@
+
+---
+
+## title: "boxplots"
+author: "jazzy abreu"
+date: "2025-02-03"
+output: html_document
+
+lets look at some boxplots
+
+```
+
+data("ToothGrowth")
+
+```
+
+lets change the dose to a factor, and look at teh top of the dataframe
+
+```
+
+ToothGrowth$as.factor(ToothGrowth$dose)
+
+head(ToothGrowth, 4)
+
+```
+
+lets load ggplot
+
+```
+
+library(ggplot2)
+
+```
+
+lets set the theme for our plots to classic
+
+```
+
+theme_set(
+  theme_bw() +
+    theme(legend.position = "top")
+
+)
+
+```
+
+lets start with a very basic boxplot with dose vs length
+
+```
+
+tg <-ggplot(ToothGrowth, aes(x = dose, y = len))
+tg + geom_boxplot()
+
+```
+
+now lets look at a boxplot with points for the mean
+
+```
+
+tg + geom_boxplot(notch = TRUE, fill = "lightgrey") +
+  stat_summary(fun.y = mean, geom = "point", shape = 18, size = 2.5, color = "indianred")
+
+```
+
+```
+tg + geom_boxplot() +
+  scale_x_discrete(limits = c("0.5", "2"))
+
+```
+
+lets put our x acxis in descending order
+
+```
+
+tg + geom_boxplot() +
+  scale_x_discrete(limits = c("2", "1", "0.5"))
+
+```
+
+we can also change boxplot colors by groups
+
+```
+
+tg + geom_boxplot(aes(color = dose)) +
+  scale_color_manual(values = c("indianred", "blue1", "green2"))
+
+```
+
+what if we want to display our data subset by oj vs vitamin c?
+
+```
+
+tg2 <- tg + geom_boxplot(aes(fill = supp), position = position_dodge(0.9)) +
+  scale_fill_manual(values = c("#999999", "#E69F19"))
+
+tg2
+
+```
+
+we can also arrange this as two plots with facet_wrap
+
+```
+
+tg2 + facet_wrap(~supp)
+
+```
