@@ -1,0 +1,247 @@
+## title: "N_grams"
+output: html_document
+date: "2025-02-08"
+
+so far we've only looked at single words, but many interesting (more accurate) analyses are based on the relationship between words.
+
+lets look at some methods for calculating and visualizing realtionships.
+
+```
+
+library(dplyr)
+library(tidytext)
+library(gutenbergr)  # Make sure this is loaded
+
+# Download books
+darwin_books <- gutenberg_download(c(944, 1227, 1228, 2300), mirror = "<http://aleph.gutenberg.org>")
+
+# Rename the 'gutenberg_id' column
+colnames(darwin_books)[1] <- "gutenberg_id"
+
+# Assign book titles based on gutenberg_id
+book_titles <- c(
+  "944"  = "The Voyage of the Beagle",
+  "1227" = "The Expression of the Emotions in Man and Animals",
+  "1228" = "On the Origin of Species by Means of Natural Selection",
+  "2300" = "The Descent of Man, and Selection in Relation to Sex"
+)
+
+darwin_books <- darwin_books %>%
+  mutate(book = book_titles[as.character(gutenberg_id)])
+
+# Tokenize into bigrams
+darwin_bigrams <- darwin_books %>%
+  filter(!is.na(text)) %>%  # Ensure 'text' column is valid
+  unnest_tokens(bigram, text, token = "ngrams", n = 2)
+
+darwin_bigrams
+
+```
+
+this data is still in tidytext format, and it's structured as one-token-per-row. Each token is a bigram.
+
+counting and filtering n-gram
+
+```
+
+darwin_bigrams %>%
+  count(bigram, sort = TRUE)
+
+```
+
+most of the common bigrams are stop-words. This can be a good time to use tidyr's separate command which splits a column into multiple based on a delimiter. This will let us make a column for word one and word two.
+
+```
+
+library(tidyr)
+
+bigrams_separated <- darwin_bigrams %>%
+  separate(bigram, c("word1", "word2"), sep = " ")
+
+bigrams_filtered <- bigrams_separated %>%
+  filter(!word1 %in% stop_words$word) %>%
+  filter(!word2 %in% stop_words$word)
+
+bigrams_filtered
+
+```
+
+new bigram counts
+
+```
+
+bigram_counts <-bigrams_filtered %>%
+  unite(bigram, word1, word2, sep = " ")
+
+bigram_counts
+
+```
+
+we may also be interested in trigrams, which are three word combos
+
+```
+
+trigrams <- darwin_books %>%
+  unnest_tokens(trigram, text, token = "ngrams", n = 3) %>%
+  separate(trigram, c("word1", "word2", "word3"), sep = " ") %>%
+  filter(!word1 %in% stop_words$word,
+         !word2 %in% stop_words$word,
+         !word3 %in% stop_words$word) %>%
+  count(word1, word2, word3, sort = TRUE)
+
+trigrams
+
+```
+
+lets again look at tf-idf across bigrams across Darwins works.
+
+```
+
+bigram_tf_idf <- bigram_counts %>%
+  count(book, bigram) %>%
+  bind_tf_idf(bigram, book, n) %>%
+  arrange(desc(tf_idf))
+
+bigram_tf_idf
+
+```
+
+```
+
+bigram_tf_idf %>%
+  arrange(desc(tf_idf)) %>%
+  group_by(book) %>%
+  slice_max(tf_idf, n = 10) %>%
+  ungroup() %>%
+  mutate(bigram = reorder(bigram, tf_idf)) %>%
+  ggplot(aes(tf_idf, bigram, fill = book)) +
+  geom_col(show.legend = FALSE) +
+  facet_wrap(~book, ncol = 2, scales = "free") +
+  labs(x = "tf-idf of bigrams", y = NULL)
+
+```
+
+using bigrams to provide in sentiment analysis
+
+```
+
+bigrams_separated %>%
+  filter(word1 == "not") %>%
+  count(word1, word2, sort = TRUE)
+
+```
+
+by doing sentiment analysis on bigrams, we can examin how often sentiment-associated words are preceded by a modifier like "not" or other negating words.
+
+```
+
+AFINN <- get_sentiments("afinn")
+
+AFINN
+
+```
+
+we can examine the most frequent words that were preceded by "not", and associate with sentiment.
+
+```
+
+not_words <- bigrams_separated %>%
+  filter(word1 == "not") %>%
+  inner_join(AFINN, by = c("word2" = "word")) %>%
+  count(word2, value, sort = TRUE)
+
+not_words
+
+```
+
+lets visualize
+
+```
+
+library(ggplot2)
+
+not_words %>%
+  mutate(contribution = n * value)%>%
+  arrange(desc(abs(contribution))) %>%
+  head(20) %>%
+  mutate(word2 = reorder(word2, contribution)) %>%
+  ggplot(aes(n * value, word2, fill = n * value > 0)) +
+  geom_col(show.legend = FALSE) +
+  labs(x = "Sentiment value * number or occurences", y = "words preceded by \\"not\\"")
+
+```
+
+```
+
+negation_words <- c("not", "no", "never", "non", "without")
+
+negated_words <- bigrams_separated %>%
+  filter(word1 %in% negation_words) %>%
+  inner_join(AFINN, by = c(word2 = "word")) %>%
+  count(word1, word2, value, sort = TRUE)
+
+negated_words
+
+```
+
+lets visualize negation words
+
+```
+
+negated_words %>%
+  mutate(contribution = n * value,
+         word2= reorder(paste(word2, word1, sep = "_"), contribution)) %>%
+  group_by(word1) %>%
+  slice_max(abs(contribution), n = 12, with_ties = FALSE) %>%
+  ggplot(aes(word2, contribution, fill = n * value > 0)) +
+  geom_col(show.legend = FALSE) +
+  facet_wrap(~ word1, scales = "free")+
+  scale_x_discrete(labels = function(x) gsub("_.+$", "", x)) +
+  xlab("Words preceded by negation term") +
+  ylab("Sentiment value * # of occurences") +
+  coord_flip()
+
+```
+
+visualize a network of bigrams with graph
+
+```
+
+library(igraph)
+
+bigram_counts <- bigrams_filtered %>%
+  count(word1, word2, sort = TRUE)
+
+bigram_graph <- bigram_counts %>%
+  filter(n >20) %>%
+  graph_from_data_frame()
+
+bigram_graph
+
+```
+
+```
+
+library(ggraph)
+set.seed(1234)
+
+ggraph(bigram_graph, layout = "fr") +
+  geom_edge_link() +
+  geom_node_point() +
+  geom_node_text(aes(label = name), vjust = 1, hjust = 1)
+
+```
+
+we can also add directionality to this network
+
+```
+
+a <- grid::arrow(type = "closed", length = unit(0.15, "inches"))
+
+ggraph(bigram_graph, layout = "fr") +
+  geom_edge_link(aes(edge_alpha = n), show.legend = FALSE, arrow = a, end_cap = circle(0.7, 'inches')) +
+  geom_node_point(color ="lightblue", size = 5) +
+  geom_node_text(aes(label=name), vjust = 1, hjust = 1) +
+  theme_void()
+
+```
