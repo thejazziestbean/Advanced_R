@@ -1,0 +1,268 @@
+## title: "Text_mining"
+author: "jazzy abreu"
+date: "2025-02-07"
+output: html_document
+
+first we'll look at the unnest_token function
+
+lets start by looking at an emily dickenson passage
+
+```
+
+text <- c("Because I could not stop from Death =",
+          "He kindly stopped for me - ",
+          "The Carriage held but just Ourselves -",
+          "and Immorality")
+
+text
+
+```
+
+this is a typical character vector that we might want to analyze. In order to turn it into a tidytext dataset, we first need to put it into a dataframe.
+
+```
+
+library(dplyr)
+
+text_df <- tibble(line = 1:4, text = text)
+
+text_df
+
+```
+
+reminder : a tibble is a modern class of data frame within R. It's available in the dplyr and tibble packages, that has a convenient print method, will not convert strongs to factors, and does not use row names. Tibbles are great for use with tidy tools.
+
+Next we will use the 'unest_tokens' function
+
+First we have the output column name that will be created as the text is unnested into it.
+
+```
+
+library(tidytext)
+
+text_df %>%
+  unnest_tokens(word, text)
+
+```
+
+lets use the janeaustenr package to analyze some Jane Austen texts. There are 6 books in this package.
+
+```
+if ("package:plyr" %in% search()) detach("package:plyr", unload = TRUE)
+
+library(janeaustenr)
+library(dplyr)
+library(stringr)
+
+original_books <- austen_books() %>%
+  group_by(book) %>%
+  mutate(
+    linenumber = row_number(),
+    chapter = cumsum(str_detect(text, regex("^chapter [\\\\divxlc]", ignore_case = TRUE)))
+  ) %>%
+  ungroup()
+
+original_books
+
+```
+
+to work with this as a tidy dataset, we need to resturcture it in the one-token-per-row format. wjocj as we saw earlier is done with the unnest_tokens() function
+
+```
+
+library(tidytext)
+tidy_books <- original_books %>%
+  unnest_tokens(word, text)
+
+tidy_books
+
+```
+
+this function uses the tokenizers package to separate each line of text in the original dataframe into tokens.
+
+the default tokenizing is for words, but other options including characters, n-grams, sentences, lines or paragraphs can be used.
+
+now that the data is in a one-word-per-row format, we can manipulate it with tools like dplyr.
+
+often in text analysis, we will want to remove stop words. stop words are words that are NOT USEFUL for an analysis. We can remove stop words (kept in the tidytext dataset 'stop_words') with an anti_join().
+
+```
+
+data(stop_words)
+
+tidy_books <- tidy_books %>%
+  anti_join(stop_words)
+
+```
+
+the stop words dataset in the tidyext package contains stop words from three locations. we can use them all together, as we have here, or filter() to only use one set of stop words if thats more appropriate for your analysis.
+
+```
+
+tidy_books %>%
+  count(word, sort = TRUE)
+
+```
+
+because we've been using tidy tools, our word counts are stored in a tidy data frame. this allows us to pipe this directly into ggplot2. for example, we can create a visualization of the most common words.
+
+```
+
+library(ggplot2)
+
+tidy_books %>%
+  count(word, sort = TRUE) %>%
+  filter(n > 600) %>%
+  mutate(Word = reorder(word,n)) %>%
+  ggplot(aes(n, word)) +
+  geom_col() +
+  labs(y = NULL)
+
+```
+
+- ------------------------------------- part 2
+
+the gutenbergr package
+
+this package access to the public domain works from the gutenburg project ([www.gutenburg.org](http://www.gutenburg.org/)). This package include tools for both downloading books and a complete dataset of project gutenburg metadata that can be used to find works of interest. we will mostly use the function gutenburg_download().
+
+word frequencies
+
+lets look at some biology tests, starting with Darwin
+
+The Voyage of the Beagle - 944
+On the origin of species by the means of natural selection - 1228
+The expression of emotions in man and animals - 1227
+The descent of man, and selection in relation to sex - 2300
+
+We can access these works using the gutenberg_download() and the Project Gutenberg IDnumbers
+
+```
+library(gutenbergr)
+
+darwin <- gutenberg_download(c(944, 1227, 1228, 2300), mirror = "<http://aleph.gutenberg.org>")
+
+```
+
+lets break these into tokens
+
+```
+
+tidy_darwin <- darwin %>%
+  unnest_tokens(word, text) %>%
+  anti_join(stop_words)
+
+```
+
+lets check out what the most common darwin words are.
+
+```
+
+tidy_darwin %>%
+  count(word, sort = TRUE)
+
+```
+
+now lets get some work for Thomas Hunt Morgan, who is credited with discovering chromosomes.
+
+Regeneration - 57198
+
+The genetic and operative evidence relating to secondary sexual characteristics - 57460
+Evolution and Adaptation - 63540
+
+```
+ morgan <- gutenberg_download(c(57198, 57460, 63540), mirror = "<http://aleph.gutenberg.org>")
+
+```
+
+Lets tokenize THM
+
+```
+
+tidy_morgan <- morgan %>%
+  unnest_tokens(word, text) %>%
+  anti_join(stop_words)
+
+```
+
+what are THM's most common words?
+
+```
+
+tidy_morgan %>%
+  count(word, sort = TRUE)
+
+```
+
+Lastly, let's look at Thomas Henry Huxley
+
+Evidence as to mans place in nature - 2931
+On the reception of the Origin of Species - 2089
+Evolution and Ethics, and Other essays - 2940
+Science and Culture, and Other essays = 52344
+
+```
+
+huxley <- gutenberg_download(c(2931, 2089, 2940, 52344), mirror = "<http://aleph.gutenberg.org>")
+
+```
+
+```
+
+tidy_huxley <- huxley %>%
+  unnest_tokens(word, text) %>%
+  anti_join(stop_words)
+
+```
+
+```
+tidy_huxley %>%
+  count(word, sort = TRUE)
+
+```
+
+nwo lets calculate the frequency for each word for the works of Darwin, Morgan, and Huxley by binding the frames together
+
+```
+
+library(tidyr)
+
+frequency <- bind_rows(mutate(tidy_morgan, author = "Thomas Hunt Morgan"),
+                       mutate(tidy_darwin, author = "Charles Darwin"),
+                       mutate(tidy_huxley, author = "Thomas Henry Huxley")) %>%
+  mutate(word = str_extract(word, "[a-z]+")) %>%
+  count(author, word) %>%
+  group_by(author) %>%
+  mutate(proportion = n/ sum(n)) %>%
+  select(-n)%>%
+  pivot_wider(names_from = author, values_from = proportion) %>%
+  pivot_longer('Thomas Hunt Morgan': 'Charles Darwin', names_to = "author", values_to = "proportion")
+
+frequency
+
+```
+
+now lets plot
+
+```
+
+library(scales)
+
+frequency <- data.frame(
+  Charles_Darwin = runif(100, min = 0.001, max = 1),
+  Thomas_Hunt_Morgan = runif(100, min = 0.001, max = 1),
+  word = sample(c("word1", "word2", "word3", "word4", "word5"), 100, replace = TRUE)
+)
+
+ggplot(frequency, aes(x = Charles_Darwin, y = Thomas_Hunt_Morgan,
+                      color = abs(Charles_Darwin - Thomas_Hunt_Morgan))) +
+  geom_abline(color = "gray40", lty = 2) +
+  geom_jitter(alpha = 0.1, size = 2.5, width = 0.3, height = 0.3) +
+  geom_text(aes(label = word), check_overlap = TRUE, vjust = 1.5) +
+  scale_x_log10(labels = percent_format()) +
+  scale_y_log10(labels = percent_format()) +
+  scale_color_gradient(limits = c(0, 1), low = "darkslategray4", high = "gray75") +
+  theme(legend.position = "none") +
+  labs(y = "Thomas Hunt Morgan", x = "Charles Darwin")
+
+```
