@@ -1,0 +1,646 @@
+## title: "exploratory_data_analysis"
+author: "jazzy abreu"
+date: "2025-02-07"
+output: html_document
+
+first lets load a required library
+
+```
+
+library(RCurl)
+library(dplyr)
+
+```
+
+now lets get our data
+
+```
+
+site <- "<https://raw.githubusercontent.com/nytimes/covid-19-data/master/colleges/colleges.csv>"
+
+College_Data <- read.csv(site)
+
+```
+
+first lets use the str function, this shows the structure of the object
+
+```
+
+str(College_Data)
+
+```
+
+what if we want to arrange our dataset alphabetically by college?
+
+```
+
+alphabetical <- College_Data %>%
+  arrange(College_Data$college)
+
+```
+
+the glimpse package is another way to preview data
+
+```
+
+glimpse(College_Data)
+
+```
+
+we can also subset with select()
+
+```
+College_Cases <- select(College_Data, college, cases)
+
+```
+
+we can also filter or subset with the filter function
+
+```
+
+Louisiana_cases <- filter(College_Data, state == "Louisiana")
+
+```
+
+Lets filter our a smaller amount of states
+
+```
+
+South_Cases <- filter(College_Data, state == "Louisiana" | state == "Texas" | state == "Arkansas" | state == "Mississippi")
+
+```
+
+lets look at some time series data
+
+First we'll load the required libraries
+
+```
+library(lubridate)
+library(dplyr)
+library(ggplot2)
+library(gridExtra)
+library(scales)
+
+```
+
+now lets load some data
+
+```
+
+state_site <- "<https://raw.githubusercontent.com/nytimes/covid-19-data/master/colleges/colleges.csv>"
+
+State_Data <- read.csv(state_site)
+
+```
+
+lets create group_by object using the state column
+
+```
+
+state_cases <- group_by(State_Data, state)
+
+class(state_cases)
+
+```
+
+how many measurements were made by state? this gives us an idea of when states started reporting
+
+```
+
+Days_since_first_reported <- tally(state_cases)
+
+```
+
+lets visualize some data
+
+first lets start off with some definitions
+
+Data -obvious- the stuff we want to visualize
+
+Layer - made of gemetric elements and requisite statistical information. Include geometric objects which represents the plot
+
+Scales = used to map values in the data space that is used for creation of values (color, size, shape, etc.)
+
+Coordinates system - describes how the data coordinates are mapped together in relation to teh plan on the graphic
+
+Faceting - how to break up data in to subsets to display multiple types or groups of data.
+
+theme - controls the finer points of the display, such as font size and background color
+
+- -------------- part 2
+
+```
+
+options (repr.plot.width = 6, rep.plot.height = 6)
+
+class(College_Data)
+
+head (College_Data)
+
+summary(College_Data)
+
+```
+
+now lets take a look at a different dataset
+
+```
+
+iris <- as.data.frame(iris)
+
+class(iris)
+
+head(iris)
+
+summary(iris)
+
+```
+
+lets start by creaing a scatter plot of the College Data
+
+```
+
+ggplot(data = College_Data, aes(x = cases, y = cases_2021)) +
+  geom_point() +
+  theme_minimal()
+
+```
+
+now lets do the iris data
+
+```
+
+ggplot(data = iris, aes(x = Sepal.Width, y =Sepal.Length)) +
+  geom_point() +
+  theme_minimal()
+
+```
+
+lets color coordinate our college data
+
+```
+
+ggplot(data = College_Data, aes(x =cases, y = cases_2021, color = state)) +
+  geom_point() +
+  theme_minimal()
+
+```
+
+lets color coordinate the iris data
+
+```
+
+ggplot(data = iris, aes(x = Sepal.Width, y = Sepal.Length, color = Species)) +
+  geom_point() +
+  theme_minimal()
+
+```
+
+lets run a simple histogram of our Louisiana Case Data
+
+```
+
+hist(Louisiana_cases$cases, freq = NULL, density = NULL, breaks = 10, xlab = "Total Cases", ylab = "Frequency",
+     main = "Total College Covid-19 Infections (Louisiana)")
+
+```
+
+lets run a simple histogram for the iris data
+
+```
+
+hist(iris$Sepal.Width, freq = NULL, density = NULL, breaks = 10, xlab = "Sepal Width",
+     ylab = "Frequency", main = "Iris Sepal Width")
+
+```
+
+```
+
+histogram_college <- ggplot(data = Louisiana_cases, aes(x = cases))
+
+histogram_college + geom_histogram(bindwidth = 100, color = "black", aes(fill = county)) +
+  xlab("cases") + ylab("Frequency") + ggtitle("Histogram of Covid 19 cases in Louisiana")
+
+```
+
+lets create a ggplot for the IRIS data
+
+```
+
+histogram_iris <- ggplot(data = iris, aes(x = Sepal.Width))
+
+histogram_iris + geom_histogram(binwidth = 0.2, color = "black", aes(fill = Species))+
+  xlab("Sepal Width") + ylab("Frequency") + ggtitle("Histogram of Iris Sepal Width by Species")
+
+```
+
+maybe a density plot makes more sense for our college data
+
+```
+
+ggplot(South_Cases) +
+  geom_density(aes(x = cases, fill = state), alpha = 0.25)
+
+```
+
+lets do it with the iris data
+
+```
+
+ggplot(iris) +
+  geom_density(aes(x = Sepal.Width, fill = Species), alpha = 0.25)
+
+```
+
+- ----------------------------------- part 3
+
+lets look at violin plots for iris
+
+```
+
+ggplot(data = iris, aes(x = Species, y = Sepal.Length, color = Species)) +
+  geom_violin() +
+  theme_classic() +
+  theme(legend.position = "none")
+
+```
+
+now lets try the sout data
+
+```
+
+ggplot(data = South_Cases, aes(x=state, y=cases, color= state)) +
+  geom_violin() +
+  theme_gray() +
+  theme(legend.position = "none")
+
+```
+
+now lets take a look at risidual plots. This a graph that displays the residuals on the vertical axis. and the independent variable on the horizontal. In the event that the points in a residual plot are dispersed in a random manner around the horizontal axis, it is appropriate to use a linear regression. If they are not randomly dispersed, a non linear model is more appropriate.
+
+lets start with the iris data
+
+```
+
+ggplot(lm(Sepal.Length ~ Sepal.Width, data = iris)) +
+  geom_point(aes(x =.fitted, y = .resid))
+
+```
+
+now look at the southern states cases
+
+```
+
+ggplot(lm(cases ~ cases_2021, data = South_Cases)) +
+  geom_point(aes(x=.fitted, y=.resid))
+
+```
+
+a linear model is not a good call for the state cases
+
+now lets do some correlations
+
+```
+
+obesity <- read.csv("Obesity_insurance.csv")
+
+```
+
+```
+library(tidyr)
+library(dplyr)
+library(plyr)
+
+```
+
+lets look at the structure of the dataset
+
+```
+
+str(obesity)
+
+```
+
+lets look at the column classes
+
+```
+
+class(obesity)
+
+```
+
+and get a summary of distribution of the variables
+
+```
+
+summary(obesity)
+
+```
+
+now lets look at the distribution for insurance charges
+
+```
+
+hist(obesity$charges)
+
+```
+
+we  can also get an idea of the distribution using a boxplot
+
+```
+
+boxplot(obesity$charges)
+
+```
+
+```
+
+boxplot(obesity$bmi)
+
+```
+
+now lets look at correlations. the cor() command is used to determine correlations between two vectors, all of the columns of a data frame, or two data frames. the cov() command, on the otherhand, examines the covariance. the cor.test() command carries out a test as to the significance of a correlation.
+
+```
+
+cor(obesity$charges, obesity$bmi)
+
+```
+
+this test uses a spearman Rho correlation, or you can use Kendall's tau by specifying it
+
+```
+
+cor(obesity$charges, obesity$bmi, method = 'kendall')
+
+```
+
+this correlation measures strength of a correlation between -1 and 1.
+
+now lets look at the Tietjen=Moore test. This is used for univeriate datasets. The algorithm depicts the detection of the outliers in a universe dataset
+
+```
+
+TietjenMoore <- function(dataSeries, k)
+{
+  n= length(dataSeries)
+  #Comput the absolute residuals
+  r = abs(dataSeries - mean(dataSeries))
+  # sort data according to size of residual
+  df = data.frame(dataSeries, r)
+  dfs = df[order(df$r),]
+  #create a subset of the data without the largest values.
+  klarge = c((n-k+1):n)
+  subdataSeries = dfs$dataSeries[-klarge]
+  #compute the sums of squares.
+  ksub = (subdataSeries = mean(subdataSeries)) **2
+  all = (df$dataSeries - mean(df$dataSeries)) **2
+  #compute the test statistic.
+  sum(ksub)/sum(all)
+
+  }
+
+```
+
+this function helps to compute the absolute residuals and sorts data according to the size of the residuals. Later, we will focus on the computation of sum of squares.
+
+```
+
+FindOutliersTietjenMooreTest <- function(dataSeries, k, alpha = 0.5){
+  ek <- TietjenMoore(dataSeries, k)
+  #compute critical values based on simulation.
+  test = c(1:10000)
+  for(i in 1:10000){
+    dataSeriesdataSeries = rnorm(length(dataSeries))
+    test[i] = TietjenMoore(dataSeriesdataSeries, k)}
+  Talpha = quantile(test, alpha)
+  list(T = ek, Talpha = Talpha)
+}
+
+```
+
+this function helps us to compute the critical values based on simulation data. Now lets demonstrate these functions with sample data and the obesity for evaluating this algorithm.
+
+the critical region for the Tietjen_Moore test is determined by simulation. The simulation is performed by generating a standard normal random sample of size n and computing the Tietjen Moore test statistic. Typically, 10,000 random samples are use. The values of the Tietjen-Moore statistic obtained from the data is compared to this reference distribution. the values of the test statistic is between zero adn one. if therea re no outliers in the data, the test statistic is close to 1. if there are outliers the test statistic will be closer to zero. thus, the test is always a lower, one-tailed test regardless of which test statistic issued, Lk or Ek.
+
+first we will look at charges
+
+```
+
+boxplot(obesity$charges)
+
+FindOutliersTietjenMooreTest(obesity$charges, 4)
+
+```
+
+```
+
+boxplot(obesity$charges)
+
+FindOutliersTietjenMooreTest(obesity$charges, 50)
+
+```
+
+- ---------------------------------------------------------- part 4
+
+probability plots
+
+```
+
+library(ggplot2)
+library(tigerstats)
+
+```
+
+we will use the probability plot function and their output dnorm: density function of the normal distribution.
+Using the density, it is possible to determine the probability of events.
+Or for examples, you may wonder "what is the likelihood that a person has an BMI of exactly _____?"
+In this case, you would need to retrieve the density of the BMI distribution of values 140.
+The BMI distribution can be modeled with a mean of 100 and a standard deviation of 15. the corresponding densit is:
+
+```
+
+bmi.mean <- mean(obesity$bmi)
+
+bmi.sd <- sd(obesity$bmi)
+
+```
+
+Let's create a plot of our normal distribution
+
+```
+
+bmi.dist <- dnorm(obesity$bmi, mean = bmi.mean, sd = bmi.sd)
+bmi.df <- data.frame("bmi" = obesity$bmi, "Density" = bmi.dist)
+
+ggplot(bmi.df, aes(x = bmi, y = Density)) +
+  geom_point()
+
+```
+
+this give us the probability of every single point occuring
+
+now lets use the pnorm function for more info
+
+```
+
+bmi.dist <- pnorm(obesity$bmi, mean = bmi.mean, sd = bmi.sd)
+bmi.df <- data.frame("bmi" = obesity$bmi, "Density" = bmi.dist)
+
+ggplot(bmi.df, aes(x=bmi, y = Density)) +
+  geom_point()
+
+```
+
+what if we want to find the probability of the bmi being greater than 40 in our distribution?
+
+```
+
+pp_greater <- function(x) {
+  paste(round(100 *pnorm(x,, mean = 30.66339, sd = 6.09818, lower.tail = FALSE), 2), "%")
+}
+
+pp_greater(40)
+
+```
+
+what about the probability that a bmi is less than 40 in our population?
+
+```
+
+pp_less <- function(x) {
+  paste(round(100 * (1-pnorm(x, mean = 30, sd = 6, lower.tail = FALSE)), 2), "%")
+}
+
+pp_less(40)
+
+```
+
+what id we want to find the area in between?
+
+```
+
+pnormGC(c(20,40), region = "between", mean = 30.66339, sd = 6.09818, graph = TRUE)
+
+```
+
+what if we want to know the quantiles? let use the qnorm function. we need dto assume a normal distribution for this.
+
+what bmi represents the lowest 1% of the population?
+
+```
+
+qnorm(0.01, mean = 30.66339, sd = 6.09818, lower.tail = TRUE)
+
+```
+
+what if you want a random sampling of values within your distribution?
+
+```
+
+subset <- rnorm(50, mean = 30.66339, sd = 6.09818)
+
+hist(subset)
+
+```
+
+Shapiro-Wilk Test
+
+So now we know how to generate a normal distribution, how do we tell if our samples came from a normal distribution?
+
+```
+
+shapiro.test(obesity$charges[1:5])
+
+```
+
+you can see here, with a small sample size, we would reject them all hypothesis that the samples came from a normal distribution. we can increase the power of the test by increasing the sample size.
+
+```
+
+shapiro.test(obesity$charges[1:1000])
+
+```
+
+now lets check out age
+
+```
+
+shapiro.test(obesity$age[1:1000])
+
+```
+
+and lastly, bmi
+
+```
+
+shapiro.test(obesity$bmi[1:1000])
+
+```
+
+- ---------------------------------------------- part 5
+
+time series data
+
+first lets load our packages
+
+```
+
+library(readr)
+library(readxl)
+
+Air_data <- read_xlsx("AirQualityUCI.xlsx")
+
+```
+
+date - date of measurement
+time - time of measurement
+CO(GT)- average hourly CO2
+PTO8, s1(CO) - tin oxide hourly average sensor response
+NMHC - average hourly non-metallic hydrocarbon concentration
+C6HC - average benzene concentration
+PTO8.S3(NHMC) - titania average hourly sensor response
+NOx - average hourly NOx concentration
+NO2 - average hourly NO2 concentration
+T - temper
+RH - relative humidity
+AH - absolute humidity
+
+```
+
+str(Air_data)
+
+```
+
+```
+
+library(tidyr)
+library(dplyr)
+library(lubridate)
+library(hms)
+library(ggplot2)
+
+```
+
+lets get rid of the data in the time column
+
+```
+
+Air_data$Time <- as_hms(Air_data$Time)
+
+glimpse(Air_data)
+
+```
+
+```
+
+plot(Air_data$AH, Air_data$RH, main = "Humidity Analysis", xlab = "Absolute Humidity", ylab = "Relative Humidity")
+
+```
+
+notice we have outlier in our data
+
+```
+
+t.test(Air_data$RH, Air_data$AH)
+
+```
