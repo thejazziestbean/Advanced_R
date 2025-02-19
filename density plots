@@ -1,0 +1,76 @@
+## title: "density plots"
+author: "jazzy abreu"
+date: "2025-02-03"
+output: html_document
+
+```
+set.seed(1234)
+
+wdata = data.frame(
+  sex = factor(rep(c("F", "M"), each = 200)),
+  weight = c(rnorm(200, 55), rnorm(200,58))
+)
+
+```
+
+```
+
+library(dplyr)
+mu <- wdata %>%
+  group_by(sex) %>%
+summarise(grp.mean = mean(weight))
+
+```
+
+now lets load the graphing packages
+
+```
+
+library(ggplot2)
+theme_set(
+  theme_classic() +
+    theme(legend.position = "right")
+)
+
+```
+
+now lets do the basic plot function. first we will create a ggplot object
+
+```
+
+d <- ggplot(wdata, aes(x = weight))
+
+```
+
+```
+d + geom_density() +
+  geom_vline(aes(xintercept = mean(weight)), linetype = "dashed")
+
+```
+
+now lets change the y axis to count instead of density
+
+```
+
+d + geom_density(aes(y = stat(count)), fill = "lightgrey") +
+  geom_vline(aes(xintercept = mean(weight)), linetype = "dashed")
+
+```
+
+```
+
+d + geom_density(aes(color = sex)) +
+  scale_color_manual(values = c("darkgray", "gold"))
+
+```
+
+lastly, let's fill the density plots
+
+```
+
+d + geom_density(aes(fill = sex), alpha = 0.4) +
+  geom_vline(aes(xintercept = grp.mean, color = sex), data = mu, linetype = "dashed") +
+  scale_color_manual(values = c("grey", "gold")) +
+  scale_fill_manual(values = c("grey", "gold"))
+
+```
