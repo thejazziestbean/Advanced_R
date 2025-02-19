@@ -1,0 +1,78 @@
+## title: "heatmaps"
+author: "jazzy abreu"
+date: "2025-02-06"
+output: html_document
+
+lets get started with heatmaps
+
+```
+
+# install.packages(heatmap3)
+
+```
+
+```
+
+library(heatmap3)
+
+```
+
+now lets get our data.
+
+```
+
+data <- ldeaths
+
+data2 <- do.call(cbind, split(data, cycle(data)))
+dimnames(data2) <- dimnames(.preformat.ts(data))
+
+```
+
+now lets generate a heat map
+
+```
+
+heatmap(data2)
+
+```
+
+```
+
+heatmap(data2, Rowv = NA, Colv = NA)
+
+```
+
+now lets play with the colors
+
+```
+
+rc <- rainbow(nrow(data2), start = 0, end = 0.3)
+cc <- rainbow(ncol(data2), start = 0, end = 0.3)
+
+```
+
+now lets apply our color selections
+
+```
+
+heatmap(data2, ColSideColors = cc)
+
+```
+
+```
+
+library(RColorBrewer)
+heatmap(data2, ColSideColors = cc,
+        col = colorRampPalette(brewer.pal(8, "PiYG"))(25))
+
+```
+
+there's more that we can customize
+
+```
+library(gplots)
+
+heatmap.2(data2, ColSideColors = cc,
+          col = colorRampPalette(brewer.pal(8, "PiYG"))(25))
+
+```
