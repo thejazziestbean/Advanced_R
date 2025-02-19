@@ -1,0 +1,88 @@
+## title: "covariation"
+author: jazzy abreu
+output: html_document
+date: "2025-02-06"
+
+```
+
+library(ggplot2)
+
+ggplot(data = diamonds, mapping = aes(x = price)) +
+  geom_freqpoly(mapping = aes(color = cut), bindwidth = 500)
+
+```
+
+its hard to see the difference in distribution because the counts differ so much
+
+```
+
+ggplot(diamonds) +
+  geom_bar(mapping = aes(x = cut))
+
+```
+
+to make the comparison easier, we need to swap the display on the y-axis. instead of displaying count, we'll display density, which is the count standardized so that the area under the curve is one.
+
+```
+
+ggplot(data = diamonds, mapping = aes(x = price, y = ..density..)) +
+  geom_freqpoly(mapping = aes(color = cut), bindwidth = 500)
+
+```
+
+it appears that fair diamonds (the lowest cut quality) have the highest average price. but maybe thats because frequency polygons are a little hard to interpret.
+
+another alternative is the boxplot. a boxplot is a type of visual shorthand for a distribution of values.
+
+```
+
+ggplot(data = diamonds, mapping = aes(x = cut, y = price)) +
+  geom_boxplot()
+
+```
+
+we see much less information about the distribution, but the boxplots are much more compact, so we can more easily compare them. it supports the conterintuitive finding that better quality diamonds are cheaper on average!
+
+lets look at some car data
+
+```
+
+ggplot(data = mpg, mapping = aes(x  = class, y = hwy)) +
+  geom_boxplot()
+
+```
+
+```
+
+ggplot(data = mpg) +
+  geom_boxplot(mapping = aes(x = reorder(class, hwy, FUN = median), y = hwy))
+
+```
+
+if you have long variable names, you can switch the acis and flip it 90 degrees.
+
+```
+
+ggplot(data = mpg) +
+  geom_boxplot(mapping = aes(x = reorder(class, hwy, FUN = median), y = hwy)) +
+  coord_flip()
+
+```
+
+to visualize the correlation between to continuous variables, we can scatter plot.
+
+```
+
+ggplot(data = diamonds) +
+  geom_point(mapping = aes(x = carat, y = price))
+
+```
+
+scatterplots become less useful as the size of your dataset grows, because we get overplot. we can fix this using the alpha aesthetic
+
+```
+
+ggplot(data = diamonds) +
+  geom_point(mapping = aes(x = carat, y = price), alpha = 1/100)
+
+```
