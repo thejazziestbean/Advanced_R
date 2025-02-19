@@ -1,0 +1,290 @@
+## title: "Word_Frequency"
+output: html_document
+date: "2025-02-08"
+
+a central question in text mining is how to quantify what a document is about. we can do this but looking at words that make up the document, and measuring term frequency.
+
+There are a lot of words that may not be important, these are the stop words.
+
+One way to remedy this is to look at inverse document frequency words, which decreases the weight for commonly used words and increases the weight for words that are not used very much.
+
+term frequency in Darwins works
+
+```
+# Load libraries
+library(gutenbergr)
+library(dplyr)
+library(tidytext)
+library(ggplot2)
+library(forcats)
+
+# Set a different mirror
+gutenberg_mirror <- "<https://www.gutenberg.org/dirs/>"
+
+# Function to safely download books
+safe_download <- function(id, mirror) {
+  tryCatch(
+    gutenberg_download(id, mirror = mirror),
+    error = function(e) {
+      message(paste("Error downloading book", id, ":", e$message))
+      return(NULL)
+    }
+  )
+}
+
+# Download books
+book_ids <- c(944, 1227, 1228, 2300)
+darwin_books <- lapply(book_ids, safe_download, mirror = gutenberg_mirror)
+
+# Remove any NULL entries (failed downloads)
+darwin_books <- darwin_books[!sapply(darwin_books, is.null)]
+
+# Combine books and add book titles
+book_words <- bind_rows(darwin_books) %>%
+  mutate(book = case_when(
+    gutenberg_id == 944  ~ "The Voyage of the Beagle",
+    gutenberg_id == 1227 ~ "The Expression of the Emotions in Man and Animals",
+    gutenberg_id == 1228 ~ "On the Origin of Species by Means of Natural Selection",
+    gutenberg_id == 2300 ~ "The Descent of Man, and Selection in Relation to Sex",
+    TRUE ~ as.character(gutenberg_id)
+  ))
+
+```
+
+now lets disect
+
+```
+# Tokenize and count words
+book_words <- book_words %>%
+  unnest_tokens(word, text) %>%
+  count(book, word, sort = TRUE)
+
+book_words
+
+```
+
+```
+# Calculate total words for each book
+total_words <- book_words %>%
+  group_by(book) %>%
+  summarize(total = sum(n))
+
+print("Total words in each book:")
+print(total_words)
+
+```
+
+```
+# Find the most common words in each book
+common_words <- book_words %>%
+  group_by(book) %>%
+  top_n(10, n) %>%
+  arrange(book, desc(n))
+
+print("Top 10 most common words in each book:")
+print(common_words)
+
+# Calculate the percentage of each word's usage
+word_percentages <- book_words %>%
+  left_join(total_words, by = "book") %>%
+  mutate(percentage = n / total * 100) %>%
+  arrange(book, desc(percentage)) %>%
+  select(book, word, n, percentage)
+
+print("Percentage of each word's usage (top 20):")
+print(head(word_percentages, 20))
+
+# Visualize the top 10 words in each book
+ggplot(common_words, aes(x = reorder(word, n), y = n, fill = book)) +
+  geom_col() +
+  facet_wrap(~book, scales = "free_y") +
+  coord_flip() +
+  labs(title = "Top 10 Words in Darwin's Books",
+       x = "Word",
+       y = "Frequency") +
+  theme_minimal() +
+  theme(legend.position = "none")
+
+ggsave("darwin_books_top_words.png", width = 12, height = 8)
+print("The plot has been saved as 'darwin_books_top_words.png'")
+
+# Apply Zipf's law
+freq_by_rank <- book_words %>%
+  left_join(total_words, by = "book") %>%
+  group_by(book) %>%
+  mutate(rank = row_number(),
+         'term frequency' = n / total) %>%
+  ungroup()
+
+# Visualize Zipf's law
+ggplot(freq_by_rank, aes(rank, `term frequency`, color = book)) +
+  geom_line(size = 1.1, alpha = 0.8, show.legend = FALSE) +
+  scale_x_log10() +
+  scale_y_log10() +
+  facet_wrap(~book, ncol = 2) +
+  labs(title = "Zipf's Law in Darwin's Works",
+       x = "Rank",
+       y = "Term Frequency")
+
+ggsave("darwin_books_zipf_law.png", width = 12, height = 8)
+
+# Calculate TF-IDF
+book_tf_idf <- book_words %>%
+  bind_tf_idf(word, book, n)
+
+print("Terms with high TF-IDF in Darwin's works:")
+print(book_tf_idf %>%
+  arrange(desc(tf_idf)) %>%
+  head(20))
+
+# Visualize high TF-IDF words
+book_tf_idf %>%
+  group_by(book) %>%
+  slice_max(tf_idf, n = 15) %>%
+  ungroup() %>%
+  ggplot(aes(tf_idf, fct_reorder(word, tf_idf), fill = book)) +
+  geom_col(show.legend = FALSE) +
+  facet_wrap(~book, ncol = 2, scales = "free") +
+  labs(title = "Top 15 words by TF-IDF in Darwin's Works",
+       x = "TF-IDF",
+       y = "Word")
+
+ggsave("darwin_books_tf_idf.png", width = 12, height = 8)
+
+```
+
+ai message:
+
+```
+# Install required packages if not already installed
+install.packages(c("gutenbergr", "dplyr", "tidytext", "ggplot2", "forcats"))
+
+# Load libraries
+library(gutenbergr)
+library(dplyr)
+library(tidytext)
+library(ggplot2)
+library(forcats)
+
+# Set a different mirror
+gutenberg_mirror <- "<https://www.gutenberg.org/dirs/>"
+
+# Function to safely download books
+safe_download <- function(id, mirror) {
+  tryCatch(
+    gutenberg_download(id, mirror = mirror),
+    error = function(e) {
+      message(paste("Error downloading book", id, ":", e$message))
+      return(NULL)
+    }
+  )
+}
+
+# Download books
+book_ids <- c(944, 1227, 1228, 2300)
+darwin_books <- lapply(book_ids, safe_download, mirror = gutenberg_mirror)
+
+# Remove any NULL entries (failed downloads)
+darwin_books <- darwin_books[!sapply(darwin_books, is.null)]
+
+# Combine books and add book titles
+book_words <- bind_rows(darwin_books) %>%
+  mutate(book = case_when(
+    gutenberg_id == 944  ~ "The Voyage of the Beagle",
+    gutenberg_id == 1227 ~ "The Expression of the Emotions in Man and Animals",
+    gutenberg_id == 1228 ~ "On the Origin of Species by Means of Natural Selection",
+    gutenberg_id == 2300 ~ "The Descent of Man, and Selection in Relation to Sex",
+    TRUE ~ as.character(gutenberg_id)
+  ))
+
+# Tokenize and count words
+book_words <- book_words %>%
+  unnest_tokens(word, text) %>%
+  count(book, word, sort = TRUE)
+
+# Calculate total words for each book
+total_words <- book_words %>%
+  group_by(book) %>%
+  summarize(total = sum(n))
+
+print("Total words in each book:")
+print(total_words)
+
+# Find the most common words in each book
+common_words <- book_words %>%
+  group_by(book) %>%
+  top_n(10, n) %>%
+  arrange(book, desc(n))
+
+print("Top 10 most common words in each book:")
+print(common_words)
+
+# Calculate the percentage of each word's usage
+word_percentages <- book_words %>%
+  left_join(total_words, by = "book") %>%
+  mutate(percentage = n / total * 100) %>%
+  arrange(book, desc(percentage)) %>%
+  select(book, word, n, percentage)
+
+print("Percentage of each word's usage (top 20):")
+print(head(word_percentages, 20))
+
+# Visualize the top 10 words in each book
+ggplot(common_words, aes(x = reorder(word, n), y = n, fill = book)) +
+  geom_col() +
+  facet_wrap(~book, scales = "free_y") +
+  coord_flip() +
+  labs(title = "Top 10 Words in Darwin's Books",
+       x = "Word",
+       y = "Frequency") +
+  theme_minimal() +
+  theme(legend.position = "none")
+
+ggsave("darwin_books_top_words.png", width = 12, height = 8)
+print("The plot has been saved as 'darwin_books_top_words.png'")
+
+# Apply Zipf's law
+freq_by_rank <- book_words %>%
+  left_join(total_words, by = "book") %>%
+  group_by(book) %>%
+  mutate(rank = row_number(),
+         'term frequency' = n / total) %>%
+  ungroup()
+
+# Visualize Zipf's law
+ggplot(freq_by_rank, aes(rank, `term frequency`, color = book)) +
+  geom_line(size = 1.1, alpha = 0.8, show.legend = FALSE) +
+  scale_x_log10() +
+  scale_y_log10() +
+  facet_wrap(~book, ncol = 2) +
+  labs(title = "Zipf's Law in Darwin's Works",
+       x = "Rank",
+       y = "Term Frequency")
+
+ggsave("darwin_books_zipf_law.png", width = 12, height = 8)
+
+# Calculate TF-IDF
+book_tf_idf <- book_words %>%
+  bind_tf_idf(word, book, n)
+
+print("Terms with high TF-IDF in Darwin's works:")
+print(book_tf_idf %>%
+  select(-total) %>%
+  arrange(desc(tf_idf)) %>%
+  head(20))
+
+# Visualize high TF-IDF words
+book_tf_idf %>%
+  group_by(book) %>%
+  slice_max(tf_idf, n = 15) %>%
+  ungroup() %>%
+  ggplot(aes(tf_idf, fct_reorder(word, tf_idf), fill = book)) +
+  geom_col(show.legend = FALSE) +
+  facet_wrap(~book, ncol = 2, scales = "free") +
+  labs(title = "Top 15 words by TF-IDF in Darwin's Works",
+       x = "TF-IDF",
+       y = "Word")
+
+ggsave("darwin_books_tf_idf.png", width = 12, height = 8)
+
+```
