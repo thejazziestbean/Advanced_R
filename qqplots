@@ -1,0 +1,92 @@
+## title: "gg_plots"
+author: "jazzy abreu"
+date: "2025-02-06"
+output: html_document
+
+now lets take a look at qq plots. These are used to determine if the given data follows a normal distribution
+
+```
+
+#install.package("ggpubr")
+
+set.seed(1234)
+
+```
+
+now lets randomly generate some data
+
+```
+
+wdata = data.frame(
+  sex = factor(rep(c("F", "M"), each = 200)),
+  weight = c(rnorm(200, 55), rnorm(200,58))
+)
+
+```
+
+lets set our theme for the graphing with ggplot
+
+```
+library(ggplot2)
+
+theme_set(
+  theme_classic() +
+    theme(legend.position = "top")
+)
+
+```
+
+create a qq plot of the weight
+
+```
+
+ggplot(wdata, aes(sample=weight)) +
+  stat_qq(aes(color = sex)) +
+  scale_color_manual(values = c("#0073c2FF", "#FC4E07")) +
+  labs(y = "weight")
+
+```
+
+```
+
+# install.packages(ggpubr)
+library(ggpubr)
+
+ggqqplot(wdata, x = "weight",
+         color = "sex",
+         palettes = c("#0073c2FF", "#FC4E07"),
+         ggtheme = theme_pubclean())
+
+```
+
+now what would a non-normal distribution look like?
+
+```
+# install.packages("mnonr")
+
+library(mnonr)
+
+Sigma_matrix <- matrix(c(1, 0.5, 0.5, 1), nrow = 2, ncol = 2)
+
+data2 <- mnonr::mnonr(n = 1000, p = 2, ms = 3, mk = 61, Sigma = Sigma_matrix, initial = NULL)
+
+data2 <- as.data.frame(data2)
+
+```
+
+now lets plot the non normal data
+
+```
+
+ggplot(data2, aes(sample=V1)) +
+  stat_qq()
+
+```
+
+```
+
+ggqqplot(data2, x= "V1",
+         palette = "#0073C2FF",
+         ggtheme = theme_pubclean())
+
+```
