@@ -1,0 +1,231 @@
+## title: "error_bars"
+output: html_document
+date: "2025-02-06"
+
+first lets load our required libraries
+
+```
+library(ggplot2)
+library(dplyr)
+library(plotrix)
+
+theme_set(
+  theme_classic() +
+    theme(legend.position = 'top')
+  )
+
+```
+
+lets again use the tooth data for thus exercise
+
+```
+
+df <- ToothGrowth
+df$dose <- as.factor(df$dose)
+
+```
+
+now lets use dplyr for manipulation purposes
+
+```
+
+df.summary <- df %>%
+  group_by(dose) %>%
+  summarise(
+    sd = sd(len, na.rm = TRUE),
+    len = mean(len),
+    stderr = std.error(len, na.rm = TRUE)
+  )
+
+df.summary
+
+```
+
+lets now look at some key functions
+
+- geom_crossbar () for hollow bars with middle indicated by a horizontal line
+- geom_errorbar () for error bars
+- geom_errorbarh() for horizontal error bars
+- geom_linerange() for drawing an interval represted by vertical line
+- geom_pointrange() for creating an interval represented by a vertical line; with a point in the middle
+
+lets start by creating a ggplot object
+
+```
+
+tg <- ggplot(
+  df.summary,
+  aes(x = dose, y = len, ymin = len - sd, ymax = len + sd)
+)
+
+```
+
+now lets look at the most basic error bars
+
+```
+
+tg + geom_pointrange()
+
+tg + geom_errorbar(width = 0.2) +
+  geom_point(size = 1.5)
+
+```
+
+now lets create horizontal error bars by manipulating our graph
+
+```
+
+ggplot(df.summary, aes(x=len, y=dose, xmin = len-sd, xmax = len+sd)) +
+  geom_point() +
+  geom_errorbarh(height = 0.2)
+
+```
+
+this jsut gives you an idea of error bars on the horizontal axis
+
+now lets look at adding jitter points (actual measurments) to our data.
+
+```
+
+ggplot(df, aes(dose, len)) +
+  geom_jitter(position = position_jitter(0.2), color = "darkgray") +
+  geom_pointrange(aes(ymin = len - sd, ymax = len+sd), data = df.summary)
+
+```
+
+now lets try our error bars as violin plot
+
+```
+
+ggplot(df, aes(dose, len)) +
+  geom_violin(color = "darkgray", trim = FALSE) +
+  geom_pointrange(aes(ymin = len - sd, ymax = len+sd), data = df.summary)
+
+```
+
+now how about with a line graph?
+
+```
+
+ggplot(df.summary, aes(dose, len)) +
+  geom_line(aes(group = 1)) + # always specify this when you have one line
+  geom_errorbar(aes(ymin = len-stderr, ymax = len-stderr), width = 0.2) +
+  geom_point(size = 2)
+
+```
+
+now lets make a bar graph with halve error bars
+
+```
+
+ggplot(df.summary, aes(dose, len)) +
+  geom_col(fill = "lightgrey", color = "black") +
+  geom_errorbar(aes(ymin = len, ymax = len+stderr), width = 0.2)
+
+```
+
+you can see that by not specifying wmin = len-stderr, we have in essence cut our bar in half.
+
+how about we add jitter points to line plots? we need to use the original dataframe for the jitter plot and the summary of df for the geom layers.
+
+```
+
+ggplot(df, aes(dose, len)) +
+  geom_jitter(position = position_jitter(0.2), color = "darkgrey")+
+  geom_line(aes(group = 1), data = df.summary) +
+  geom_errorbar(
+    aes(ymin = len - stderr, ymax = len + stderr),
+    data = df.summary, width =0.2) +
+  geom_point(data = df.summary, size = 0.2)
+
+```
+
+what about adding jitterpoints to a barplot?
+
+```
+
+ggplot(df, aes(dose, len)) +
+  geom_col(data = df.summary, fill = NA, color = "black") +
+  geom_jitter(position = position_jitter(0.3), color = "blue") +
+  geom_errorbar(aes(ymin = len - stderr, ymax = len+stderr),
+                data = df.summary, width = 0.2)
+
+```
+
+what if we wanted to have our error bars per group (OJ vs VC)
+
+```
+
+df.summary2 <-df %>%
+  group_by(dose, supp) %>%
+  summarise(
+    sd = sd(len),
+    stderr = std.error(len),
+    len = mean(len)
+  )
+df.summary2
+
+```
+
+now you can see we have mean and error for each dose and supp
+
+```
+
+ggplot(df.summary2, aes(dose, len)) +
+  geom_pointrange(
+    aes(ymin = len - stderr, ymax = len + stderr, color = supp),
+    position = position_dodge(0.3)) +
+  scale_color_manual(values = c("indianred", "lightblue"))
+
+```
+
+how about line plots with multiple error bars?
+
+```
+
+ggplot(df.summary2, aes(dose, len)) +
+  geom_line(aes(linetype = supp, group = supp)) +
+  geom_point() +
+  geom_errorbar(aes(ymin = len-stderr, ymax = len+stderr, group = supp), width = 0.2)
+
+```
+
+add the same with a bar plot
+
+```
+
+ggplot(df.summary2, aes(dose, len)) +
+  geom_col(aes(fill = supp), position = position_dodge(0.8), width = 0.7) +
+  geom_errorbar(
+    aes(ymin = len - stderr, ymax = len + stderr, group = supp),
+    width = 0.2, position = position_dodge(0.8)
+  ) +
+  scale_fill_manual(values = c("indianred", "lightblue"))
+
+```
+
+now lets add some jitterpoints
+
+```
+
+ggplot(df, aes(dose, len, color = supp)) +
+  geom_jitter(position = position_dodge(0.2)) +
+  geom_line(aes(group = supp), data = df.summary2) +
+  geom_point()
+geom_errorbar(aes(ymin = len - stderr, ymax =len +stderr, group = supp), data = df.summary2, width = 0.2)
+
+```
+
+```
+
+ggplot(df, aes(dose, len, color = supp)) +
+  geom_col(data = df.summary2, position = position_dodge(0.8), width = 0.7, fill = "white") +
+  geom_jitter(
+    position = position_jitterdodge(jitter.width = 0.2, dodge.width = 0.8)) +
+  geom_errorbar(
+    aes(ymin = len - stderr, ymax = len+stderr), data = df.summary2,
+    width = 0.2, position = position_dodge(0.8)) +
+  scale_color_manual(values = c("indianred", "lightblue")) +
+  theme(legend.position = "top")
+
+```
