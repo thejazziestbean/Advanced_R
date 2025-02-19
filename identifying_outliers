@@ -1,0 +1,81 @@
+## title: "identifying_outliers"
+output: html_document
+date: "2025-02-06"
+
+what if we want to know what our outliers are?
+
+first we need to load the required libraries
+
+```
+
+library(outliers)
+library(ggplot2)
+
+```
+
+and reloud the dataser because we removed outliers
+
+```
+library(readxl)
+Air_data <- read_xlsx("AirQualityUCI.xlsx")
+
+```
+
+- ----------------------------------- continuing on for when code gets fixed
+
+lets create a function using the grubbb test to identidy all outliers.
+
+the grubbs test identifies outliers in a univariable dataset that is presumed to come from a normal distribution.
+
+```
+
+grubbs.flag <- function(x) {
+  #lets create a variable called outliers and save nothing in it, we'll add to the variable as we identify them
+
+  outliers <- NULL
+
+  #we'll create a variable called test to identify which univariate we are testing
+
+  test <- x
+
+  #now using the outliers package, use grubbs test to find outliers in our variable
+
+  grubbs.result <- grubbs.test(test)
+
+  #lets get the p-values of all tested variables
+
+  pv <- grubbs.result$p.value
+
+  #now lets search through our p-values for ones that are outside of 0.5
+  while(pv < 0.05) {
+
+    # anything with a pvalues greater than p = 0.05, we add to our empty outliers vector
+    outliers <- c(outliers, as.numeric(strsplit(grubbs.result$alternative, "")[1][3]))
+
+   #now we want to remove those outliers from our test variable
+
+    test <- x[!x %in% outliers]
+
+  #and run the grubbs test again without the outliers
+
+    grubbs.result <- grubbs.test(test)
+
+  #and save the new pvalues
+
+    pv <- grubbs.results$p.value
+
+  }
+
+return(data.frame(x=x, Outliers = (x %in% outliers)))
+
+}
+
+```
+
+```
+
+identified_outliers <- grubbs.test(Air_data$AH)
+
+```
+
+now we can create a histogram showing where the outliers were
