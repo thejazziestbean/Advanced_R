@@ -1,0 +1,62 @@
+## title: "dotplots"
+author: "jazzy abreu"
+date: "2025-02-03"
+output: html_document
+
+first lets upload the required packages
+
+```
+
+library(ggplot2)
+
+```
+
+lets set our theme
+
+```
+
+theme_set(
+  theme_dark() +
+    theme(legend.position = "top")
+)
+
+```
+
+first lets initiate a ggplot object called TG
+
+```
+
+data("ToothGrowth")
+ToothGrowth$dose <- as.factor(ToothGrowth$dose)
+
+tg <- ggplot(ToothGrowth, aes(x=dose, y = len))
+
+```
+
+lets create a dotplot with a summary statistic
+
+```
+
+tg + geom_dotplot(binaxis = "y", stackdir = "center", fill = "white") +
+  stat_summary(fun = mean, fun.args = list(mult=1))
+
+```
+
+lets add a boxplot and dotplot together
+
+```
+
+tg + geom_boxplot(width = 0.5) +
+  geom_dotplot(binaxis = "y", stackdir = "center", fill = "white")
+
+```
+
+```
+
+tg + geom_violin(trim = FALSE) +
+  geom_dotplot(binaxis = "y", stackdir = "center", fill = "#999999") +
+  stat_summary(fun = mean, fun.args = list(mult = 1))
+
+```
+
+lets create a dotplot with multiple groups
