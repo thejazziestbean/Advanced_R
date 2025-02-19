@@ -1,0 +1,53 @@
+## title: "plotly_line_graphs"
+output: html_document
+date: "2025-02-04"
+
+first lets load our required package
+
+```
+
+library(plotly)
+
+```
+
+lets start with a scatter plot of the orange dataset
+
+```
+
+Orange <- as.data.frame(Orange)
+
+plot_ly(data = Orange, x = ~age, y = ~circumference)
+
+```
+
+now lets add some more info
+
+```
+
+plot_ly(data = Orange, x = ~age, y = ~circumference,
+        color = ~Tree, size = ~age,
+        text = ~paste("Tree ID:", Tree, "<br>Age:", age, "Circ:", circumference)
+)
+
+```
+
+now lets create a random distribution and add it to our dataframe
+
+```
+trace_1 <- rnorm(35, mean = 120, sd = 10)
+new_data <- data.frame(Orange, trace_1)
+
+```
+
+we'll use the random numbers as lines on the graph
+
+```
+
+plot_ly(data = new_data, x = ~age, y = ~circumference, color = ~Tree, size = ~age,
+        text = ~paste("Tree ID:", Tree, "<br>Circ:", circumference)) %>%
+  add_trace(y = ~trace_1, mode = 'lines') %>%
+  add_trace(y = ~circumference, mode = 'markers')
+
+```
+
+now lets create a graph with the option of showing as a scatter or line, and add labels.
