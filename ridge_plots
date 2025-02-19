@@ -1,0 +1,56 @@
+## title: "ridge plot"
+author: "jazzy abreu"
+date: "2025-02-03"
+output: html_document
+
+first lets load the required packages
+
+```
+library(ggplot2)
+library(ggridges)
+
+#BiocManager ::install("ggridges")
+
+```
+
+now lets load some sample data
+
+```
+
+?airquality
+
+```
+
+```
+
+air <- ggplot(airquality) + aes(Temp, Month, group = Month) + geom_density_ridges()
+
+air
+
+```
+
+now lets add some pazzaz to our graph
+
+```
+
+library(viridis)
+
+ggplot(airquality) + aes(Temp, Month, group = Month, fill = ..x..) +
+  geom_density_ridges_gradient() +
+  scale_fill_viridis(option = "C", name = "Temp")
+
+```
+
+last thing we will do is create a facet plot for all of our data
+
+```
+
+library(tidyr)
+
+airquality %>%
+  gather(key = "Measurement", value = "value", Ozone, Solar.R, Wind, Temp) %>%
+  ggplot() + aes(value, Month, group = Month) +
+  geom_density_ridges() +
+  facet_wrap(~Measurement, scales = "free")
+
+```
