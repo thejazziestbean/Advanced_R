@@ -1,0 +1,72 @@
+## title: "missing values"
+author: "jazzy abreu"
+date: "2025-02-06"
+output: html_document
+
+missing values
+
+if you encounter a unusual value in your dataset, and simply want to move on to teh rest of your analysis, you have two options:
+
+drop the entire row with the strange values:
+
+```
+
+library(dplyr)
+library(ggplot2)
+
+diamonds <- diamonds
+
+diamonds2 <- diamonds %>%
+  filter(between(y, 3, 20))
+
+```
+
+in this instance, y is the width of the diamond, so anything under 3 mm or above 20 is excluded.
+
+I dont't recommend this option, just because there is one bad measurment doesn't mean they are all bad.
+
+Instead, i recommend replacing the unusual values with missing values
+
+```
+
+diamonds3 <- diamonds %>%
+  mutate(y = ifelse(y < 3 | y > 20, NA, y))
+
+```
+
+like R, ggplot2 subscribes to the idea that missing values shouldn't pass silently into the night.
+
+```
+
+ggplot(data = diamonds3, mapping = aes(x = x, y=y)) +
+  geom_point()
+
+```
+
+if you want to suppress that warning you can use na.rm = TRUE
+
+```
+
+ggplot(data = diamonds3, mapping = aes(x = x, y = y)) +
+  geom_point(na.rm = TRUE)
+
+```
+
+other times you want t understand what makes observations with missing values different to the observation with recorded values. for example, in the NYCflights13 dataset, missing values in the dep_time variable indicate that the flight was cancelled. so you might want to compare the scheduled departure times for cancelled and non-cancelled times.
+
+```
+library(nycflights13)
+library(ggplot2)
+library(dplyr)
+
+nycflights13::flights %>%
+  mutate(
+    cancelled = is.na(dep_time),
+    sched_hour = sched_dep_time %/% 100,
+    sched_min = (sched_dep_time %% 100),
+    sched_dep_time_adj = sched_hour + sched_min / 60
+  ) %>%
+  ggplot(mapping = aes(sched_dep_time)) +
+  geom_freqpoly(mapping = aes(color = cancelled), bindwith = 1/4)
+
+```
