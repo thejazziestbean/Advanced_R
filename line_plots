@@ -1,0 +1,180 @@
+## title: "line plots"
+author: "jazzy abreu"
+date: "2025-02-03"
+output: html_document
+
+now lets change it up and look at some line plots
+
+we'll start by making custom dataframe kinda like the tooth dataset. this way we can see the lines and stuff that we're modifying
+
+```
+
+df <- data.frame(dose = c("D0.5", "D1", "D2"),
+                 len = c(4.2, 10, 29.5))
+
+```
+
+now lets create a second dataframe for plotting by groups
+
+```
+
+df2 <- data.frame(supp = rep(c("VC", "OJ"), each = 3),
+                  dose = rep(c("D0.5", "D1", "D2"), 2),
+                  len = c(4.2, 10, 29.5))
+
+df2
+
+```
+
+now lets again load ggplot2 and set a theme
+
+```
+
+library(ggplot2)
+
+theme_set(
+  theme_grey() +
+    theme(legend.position = "right")
+)
+
+```
+
+now lets do some basic line plots. first we will build a function to display all the different line types
+
+```
+
+generateRLineTypes <- function(){
+  oldPar <- par()
+  par(font = 2, mar = c(0,0,0,0))
+  plot(1, pch = "", ylim =c(0,6), xlim=c(0,0.7), axes = FALSE, xlab = "", ylab = "")
+  for(i in 0:6) lines (c(0.3, 0.7), c(i,i), lty=i, lwd=3)
+  text(rep(0.1, 6), 0.6, labels = c("0. 'Blank'", "1. 'solid'", "2. 'dashed'", "3. 'dotted'",
+                        "4. 'dotdash'", "5. 'longdash'", "6. 'twodash'"))
+  par(mar=oldPar$mar, font=oldPar$font)
+}
+
+generateRLineTypes()
+
+```
+
+now lets build a basic line plot
+
+```
+
+p <- ggplot(data = df, aes(x = dose, y = len, group = 1))
+
+p + geom_line() + geom_point()
+
+```
+
+now lets modify the line type and color
+
+```
+
+p + geom_line(linetype = "dashed", color = "steelblue") +
+  geom_point(color = "steelblue")
+
+```
+
+now lets try a step graph which indicates a threshold type progression
+
+```
+
+p + geom_step() + geom_point()
+
+```
+
+now lets move on to making multiple groups. first we'll create our ggplot object
+
+```
+
+p <- ggplot(df2, aes(x=dose, y=len, group = supp))
+
+```
+
+now lets change line types and point shapes by group
+
+```
+
+p + geom_line(aes(linetype = supp, color = supp)) +
+  geom_point(aes(shape = supp, color = supp)) +
+  scale_color_manual(values = c("red", "blue"))
+
+```
+
+now lets look at the line plots with numeric x axis
+
+```
+
+df3 <- data.frame(supp = rep(c("VC", "OJ"), each = 3),
+                  dose = rep(c("0.5", "1", "2"), 2),
+                  len = c(6.8, 15, 33, 4.2, 10, 29.5))
+
+df3
+
+```
+
+now lets plot where both axises are treated as continuous labels
+
+```
+
+df3$dose <- as.numeric(as.vector(df3$dose))
+ggplot(data = df3, aes(x=dose, y=len, goup = supp, color = supp)) +
+  geom_line() + geom_point()
+
+```
+
+now lets look at a line graph with having the x axis as dates. we'll use the built in economics time series for this example
+
+```
+
+head(economics)
+
+```
+
+```
+
+ggplot(data = economics, aes(x = date, y = pop)) +
+  geom_line()
+
+```
+
+now lets subset the data
+
+```
+
+ss <- subset(economics, date> as.Date("2006-1-1"))
+ggplot(data = ss, aes(x = date, y = pop)) + geom_line()
+
+```
+
+we can also change the line size, for instance by another variable like unemployment
+
+```
+
+ggplot(data = economics, aes(x=date, y=pop)) +
+  geom_line(aes(size = unemploy/pop))
+
+```
+
+we can also plot multiple time-series data
+
+```
+
+ggplot(economics, aes(x=date)) +
+  geom_line(aes(y=psavert), color = "darkred") +
+  geom_line(aes(y = uempmed), color = "steelblue", linetype = "twodash")
+
+```
+
+lastly, lets make this into an area plot
+
+```
+
+ggplot(economics, aes (x=date)) +
+  geom_area(aes(y = psavert), fill = "#999999",
+            color = "#999999", alpha = 0.5) +
+  geom_area(aes(y = uempmed), fill = "#E69F00",
+            color = "#E69F00", alpha = 0.5)
+
+```
