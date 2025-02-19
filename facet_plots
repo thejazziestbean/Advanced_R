@@ -1,0 +1,166 @@
+## title: "facet_plots"
+author: "jazzy abreu"
+date: "2025-02-06"
+output: html_document
+
+lets look at how to put multiple plots together into a single figure
+
+```
+
+library(ggpubr)
+library(ggplot2)
+
+theme_set(
+  theme_bw() +
+    theme(legend.position = "top")
+)
+
+```
+
+first lets create a nice boxplot
+
+lets load the data
+
+```
+
+df <- ToothGrowth
+df$dose <- as.factor(df$dose)
+
+```
+
+and create the plot object
+
+```
+
+p <- ggplot(df, aes(x=dose, y= len)) +
+  geom_boxplot(aes(fill = supp), position = position_dodge(0.9)) +
+  scale_fill_manual(values = c("#00AFBB", "#E7B800"))
+
+p
+
+```
+
+now lets look at the gvgplot facit function
+
+```
+
+p + facet_grid(rows = vars(supp))
+
+```
+
+now lets do a facet with multiple variables
+
+```
+
+p + facet_grid(rows = vars(dose), cols = vars(supp))
+
+p
+
+```
+
+now lets look at the facet_wrap function. this allows facets to be placed side-by-side
+
+```
+
+p + facet_wrap(vars(dose), ncol = 2)
+
+```
+
+now how do we combine multiple plots using ggarrange()
+
+lets start by makibng some basic plots. first we will define a color palette and data
+
+```
+
+my3cols <- c("#e7B800", "#2E9FDF", "#FC4E07")
+ToothGrowth$dose <- as.factor(ToothGrowth$dose)
+
+```
+
+now lets make some basic pairs
+
+```
+
+p <- ggplot(ToothGrowth, aes(x = dose, y = len))
+bxp <- p + geom_boxplot(aes(color = dose)) +
+  scale_color_manual(values = my3cols)
+
+```
+
+ok now lets do a dotplot
+
+```
+
+dp <- p + geom_dotplot(aes(color = dose, fill = dose),
+                       binaxis = 'y', stackdir = 'center') +
+  scale_color_manual(values = my3cols) +
+  scale_fill_manual(values = my3cols)
+
+```
+
+now lastly lets create a lineplot
+
+```
+
+lp <- ggplot(economics, aes(x=date, y=psavert)) +
+  geom_line(color = "indianred")
+
+```
+
+now we can make the figure
+
+```
+
+figure <- ggarrange(bxp, dp, lp, labels = c("A", "B", "C"), ncol = 2, nrow = 2)
+
+figure
+
+```
+
+this looks great, but we can make it look even better
+
+```
+
+figure2 <- ggarrange(
+  lp,
+  ggarrange(bxp, dp, ncol=2, nlabs = c ("B", "C")),
+  nrow = 2,
+  labels = "A")
+
+figure2
+
+```
+
+okay this looks really good, but you'll notice that there are two legends that are the same.
+
+```
+
+ggarrange(
+  bxp, dp, labels = c("A", "B"),
+  common.legend = TRUE, legend = "bottom")
+
+```
+
+lastly, we should export the plot
+
+```
+
+ggexport(figure2, filename = "facetfigure.pdf")
+
+```
+
+we can also export multiple plots to a pdf
+
+```
+
+ggexport(bxp, dp, lp, filename = "multi.pdf")
+
+```
+
+lastly, we can export to pdf with multiple pages and multiple columns
+
+```
+
+ggexport(bxp, dp, lp, bxp, filename = "test2.pdf", nrow = 2, ncol = 1)
+
+```
