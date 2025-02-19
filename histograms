@@ -1,0 +1,87 @@
+## title: "histograms"
+author: "jazzy abreu"
+date: "2025-02-03"
+output: html_document
+
+```
+
+set.seed(1234)
+
+wdata = data.frame(
+  sex = factor(rep(c("F", "M"), each = 200)),
+  weight = c(rnorm(200, 50), rnorm(200, 58))
+)
+
+head(wdata, 4)
+
+```
+
+now lets load dplyr
+
+```
+library(dplyr)
+
+mu <- wdata %>%
+  group_by(sex) %>%
+  summarise(grp.mean = mean(weight))
+
+```
+
+now lets load the plotting package
+
+```
+
+library(ggplot2)
+
+theme_set(
+  theme_classic() +
+    theme(legend.position = "bottom")
+)
+
+```
+
+now lets create a ggplot object
+
+```
+
+a <- ggplot(wdata, aes(x = weight))
+
+a + geom_histogram(bins = 30, color = "black", fill = "grey") +
+  geom_vline(aes(xintercept = mean(weight)),
+            linetype = "dashed", size = 0.6)
+
+```
+
+now lets change the color by group
+
+```
+
+a + geom_histogram(aes(color = sex), fill = "white", position = "identity") +
+  scale_color_manual(values = c("#00AFBB", "#E7B800"))
+
+```
+
+```
+
+a + geom_histogram(aes(color = sex, fill = sex), position = "identity") +
+  scale_color_manual(values = c("#00AFBB", "#E7B800")) +
+  scale_fill_manual(values = c("indianred", "lightblue1"))
+
+```
+
+```
+
+a + geom_histogram(aes(y = stat(density)),
+                    color = "black", fill = "white") +
+  geom_density(alpha = 0.2, fill = "#FF6666")
+
+```
+
+```
+
+a + geom_histogram(aes(y = stat(density), color = sex),
+                   fill = "white", position = "identity") +
+  geom_density(aes(color = sex), size = 1) +
+  scale_color_manual(values = c("indianred", "lightblue1"))
+
+```
