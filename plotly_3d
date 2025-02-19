@@ -1,0 +1,58 @@
+## title: "plotly_3d"
+output: html_document
+date: "2025-02-06"
+
+first lets load our required packages
+
+```
+
+library(plotly)
+
+```
+
+```
+
+d <- data.frame(
+  x <- seq(1,10, by = 0.5),
+  y <- seq(1,10, by = 0.5)
+)
+
+z <- matrix(rnorm(length(d$x) * length (d$y)), nrow = length(d$x), ncol = length(d$y))
+
+```
+
+now lets plot our 3D data
+
+```
+
+plot_ly(d, x=~x, y = ~y, z = ~z) %>%
+  add_surface()
+
+```
+
+lets add some more aspects to it, such as at topography
+
+```
+
+plot_ly(d, x = ~x, y =~y, z =~z) %>%
+  add_surface(
+    contours = list(
+      z = list(
+        show = TRUE,
+        usecolormap = TRUE,
+        highlightcolor = "FF0000",
+        project = list(z = TRUE)
+      )
+    )
+  )
+
+```
+
+now lets look at a 3d scatter plot
+
+```
+
+plot_ly(longley, x = ~GNP, y = ~Population, z = ~Employed, marker = list(color = ~GNP)) %>%
+  add_markers()
+
+```
